@@ -7,18 +7,54 @@ public partial class MainPage : ContentPage
 	public MainPage()
 	{
 		InitializeComponent();
+		string cacheDirectory = FileSystem.CacheDirectory;
+
+		if(!Directory.Exists(cacheDirectory)){
+			Directory.CreateDirectory(cacheDirectory);
+		}
+
 	}
 
-	private void OnCounterClicked(object sender, EventArgs e)
+	private void SendLink(object sender, EventArgs e)
 	{
-		count++;
+		dressPhoto.Source="";
+		GetImageController.GetImage(linkInput.Text);
+	}
 
-		if (count == 1)
-			CounterBtn.Text = $"Clicked {count} time";
-		else
-			CounterBtn.Text = $"Clicked {count} times";
+	private async void OnPickPhotoClicked(object sender, EventArgs e){
 
-		SemanticScreenReader.Announce(CounterBtn.Text);
+		FileResult photo = await MediaPicker.Default.PickPhotoAsync();
+
+		if(photo != null){
+			
+			string filePath = Path.Combine(FileSystem.CacheDirectory,photo.FileName);
+			using Stream sourceStream = await photo.OpenReadAsync();
+			using FileStream fileStream = File.OpenWrite(filePath);
+
+			await sourceStream.CopyToAsync(fileStream);
+
+			userPhoto.Source = ImageSource.FromFile(filePath);
+
+		}
+
+	}
+
+	private async void OnTakePhotoClicked(object sender, EventArgs e){
+		if(MediaPicker.Default.IsCaptureSupported){
+			FileResult photo = await MediaPicker.Default.CapturePhotoAsync();
+
+			if(photo != null){
+				string filePath = Path.Combine(FileSystem.CacheDirectory,photo.FileName);
+
+				using Stream sourceStream = await photo.OpenReadAsync();
+
+				using FileStream fileStream = File.OpenWrite(filePath);
+
+				await sourceStream.CopyToAsync(fileStream);
+
+				userPhoto.Source = ImageSource.FromFile(filePath);
+			}
+		}
 	}
 }
 
